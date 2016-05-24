@@ -26,6 +26,7 @@ return [
     'Edit' => '',
     'Name' => '',
     'Remove' => '',
+    'Rotate' => '',
     'Save changes' => '',
     'Select all' => '',
     'Drop Files Here…' => '',

@@ -1,13 +1,14 @@
 <?php
 
-namespace zxbodya\yii2\galleryManager;
+namespace aquy\gallery;
 
 class GalleryImage
 {
     public $name;
     public $description;
     public $id;
-    public $rank;
+    public $sort;
+    public $src;
     /**
      * @var GalleryBehavior
      */
@@ -25,16 +26,18 @@ class GalleryImage
         $this->name = isset($props['name']) ? $props['name'] : '';
         $this->description = isset($props['description']) ? $props['description'] : '';
         $this->id = isset($props['id']) ? $props['id'] : '';
-        $this->rank = isset($props['rank']) ? $props['rank'] : '';
+        $this->sort = isset($props['sort']) ? $props['sort'] : '';
+        $this->src = isset($props['src']) ? $props['src'] : '';
     }
 
-    /**
-     * @param string $version
-     *
-     * @return string
-     */
-    public function getUrl($version)
+    public function getUrl()
     {
-        return $this->galleryBehavior->getUrl($this->id, $version);
+        return $this->galleryBehavior->getUrl($this->src);
     }
+
+    public function getFilePath()
+    {
+        return $this->galleryBehavior->getFilePath($this->src);
+    }
+
 }

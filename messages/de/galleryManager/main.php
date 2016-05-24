@@ -15,6 +15,7 @@ return [
     'Edit' => 'Bearbeiten',
     'Name' => 'Name',
     'Remove' => 'Entfernen',
+    'Rotate' => '',
     'Save changes' => 'Änderungen speichern',
     'Select all' => 'Alle auswählen',
     'Drop Files Here…' => 'Ziehen Sie Ihre dateien hierrein',

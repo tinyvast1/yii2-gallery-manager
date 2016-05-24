@@ -12,6 +12,7 @@ return [
     'Edit information' => 'Редагування інформації',
     'Edit' => 'Редагувати',
     'Remove' => 'Видалити',
+    'Rotate' => '',
     'Save changes' => 'Зберегти зміни',
     'Select all' => 'Вибрати все',
     'Drop Files Here…' => 'Перетяніть файли сюди',

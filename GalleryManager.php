@@ -1,13 +1,13 @@
 <?php
 
-namespace zxbodya\yii2\galleryManager;
+namespace aquy\gallery;
 
 use Yii;
-use yii\base\Exception;
-use yii\base\Widget;
-use yii\db\ActiveRecord;
-use yii\helpers\Json;
 use yii\helpers\Url;
+use yii\base\Widget;
+use yii\helpers\Json;
+use yii\base\Exception;
+use yii\db\ActiveRecord;
 
 /**
  * Widget to manage gallery.
@@ -62,10 +62,11 @@ class GalleryManager extends Widget
         foreach ($this->behavior->getImages() as $image) {
             $images[] = array(
                 'id' => $image->id,
-                'rank' => $image->rank,
+                'sort' => $image->sort,
+                'src' => $image->src,
                 'name' => (string)$image->name,
                 'description' => (string)$image->description,
-                'preview' => $image->getUrl('preview'),
+                'preview' => $image->getUrl($image->src),
             );
         }
 
@@ -82,9 +83,15 @@ class GalleryManager extends Widget
             'uploadUrl' => Url::to($baseUrl + ['action' => 'ajaxUpload']),
             'deleteUrl' => Url::to($baseUrl + ['action' => 'delete']),
             'updateUrl' => Url::to($baseUrl + ['action' => 'changeData']),
+            'rotateUrl' => Url::to($baseUrl + ['action' => 'rotate']),
             'arrangeUrl' => Url::to($baseUrl + ['action' => 'order']),
             'nameLabel' => Yii::t('galleryManager/main', 'Name'),
             'descriptionLabel' => Yii::t('galleryManager/main', 'Description'),
+            'messages' => array(
+                'edit' => Yii::t('galleryManager/main', 'Edit'),
+                'remove' => Yii::t('galleryManager/main', 'Remove'),
+                'rotate' => Yii::t('galleryManager/main', 'Rotate'),
+            ),
             'photos' => $images,
         );
 

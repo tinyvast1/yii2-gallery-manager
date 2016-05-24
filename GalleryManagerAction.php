@@ -1,14 +1,13 @@
 <?php
 
-namespace zxbodya\yii2\galleryManager;
-
+namespace aquy\gallery;
 
 use Yii;
 use yii\base\Action;
-use yii\db\ActiveRecord;
 use yii\helpers\Json;
-use yii\web\HttpException;
+use yii\db\ActiveRecord;
 use yii\web\UploadedFile;
+use yii\web\HttpException;
 
 /**
  * Backend controller for GalleryManager widget.
@@ -64,6 +63,9 @@ class GalleryManagerAction extends Action
             case 'delete':
                 return $this->actionDelete(Yii::$app->request->post('id'));
                 break;
+            case 'rotate':
+                return $this->actionRotate(Yii::$app->request->post('id'));
+                break;
             case 'ajaxUpload':
                 return $this->actionAjaxUpload();
                 break;
@@ -96,6 +98,13 @@ class GalleryManagerAction extends Action
         return 'OK';
     }
 
+    protected function actionRotate($id)
+    {
+        $this->behavior->rotateImage($id);
+
+        return 'OK';
+    }
+
     /**
      * Method to handle file upload thought XHR2
      * On success returns JSON object with image info.
@@ -108,8 +117,7 @@ class GalleryManagerAction extends Action
 
         $imageFile = UploadedFile::getInstanceByName('image');
 
-        $fileName = $imageFile->tempName;
-        $image = $this->behavior->addImage($fileName);
+        $image = $this->behavior->addImage($imageFile);
 
         // not "application/json", because  IE8 trying to save response as a file
 
@@ -118,10 +126,11 @@ class GalleryManagerAction extends Action
         return Json::encode(
             array(
                 'id' => $image->id,
-                'rank' => $image->rank,
+                'sort' => $image->sort,
+                'src' => $image->src,
                 'name' => (string)$image->name,
                 'description' => (string)$image->description,
-                'preview' => $image->getUrl('preview'),
+                'preview' => $image->getUrl($image->src),
             )
         );
     }
@@ -164,10 +173,11 @@ class GalleryManagerAction extends Action
         foreach ($images as $model) {
             $resp[] = array(
                 'id' => $model->id,
-                'rank' => $model->rank,
+                'sort' => $model->sort,
+                'src' => $model->getUrl($model->src),
                 'name' => (string)$model->name,
                 'description' => (string)$model->description,
-                'preview' => $model->getUrl('preview'),
+                'preview' => $model->getUrl($model->src),
             );
         }
 

@@ -14,8 +14,8 @@
     float: left;
     background-color: #fff;
     margin: 4px;
-    height: 178px;
-    width: 140px;
+    height: 267px;
+    width: 210px;
     display: block;
     padding: 4px;
     line-height: 1;
@@ -27,7 +27,7 @@
     -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075);
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075); }
     .gallery-manager .photo img {
-      width: 140px;
+      width: 210px;
       height: auto; }
     .gallery-manager .photo a {
       padding-left: 8px; }
@@ -65,13 +65,13 @@
     overflow: hidden;
     font-size: 13px; }
   .gallery-manager.no-desc .photo {
-    height: 138px; }
+    height: 207px; }
   .gallery-manager.no-name .photo {
-    height: 160px; }
+    height: 240px; }
   .gallery-manager.no-name-no-desc .photo {
-    height: 120px; }
+    height: 180px; }
   .gallery-manager .image-preview {
-    height: 88px;
+    height: 132px;
     overflow: hidden; }
   .gallery-manager .photo-select {
     position: absolute;

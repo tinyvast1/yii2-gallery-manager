@@ -1,14 +1,13 @@
 <?php
 
-namespace zxbodya\yii2\galleryManager;
+namespace aquy\gallery;
 
-use Imagine\Image\Box;
-use Imagine\Image\ImageInterface;
+use Yii;
+use yii\db\Query;
+use yii\imagine\Image;
 use yii\base\Behavior;
 use yii\base\Exception;
 use yii\db\ActiveRecord;
-use yii\db\Query;
-use yii\imagine\Image;
 
 /**
  * Behavior for adding gallery to any model.
@@ -36,21 +35,6 @@ class GalleryBehavior extends Behavior
      */
     public $owner;
     /**
-     * Widget preview height
-     * @var int
-     */
-    public $previewHeight = 200;
-    /**
-     * Widget preview width
-     * @var int
-     */
-    public $previewWidth = 200;
-    /**
-     * Extension for saved images
-     * @var string
-     */
-    public $extension;
-    /**
      * Path to directory where to save uploaded images
      * @var string
      */
@@ -60,26 +44,7 @@ class GalleryBehavior extends Behavior
      * @var string
      */
     public $url;
-    /**
-     * @var array Functions to generate image versions
-     * @note Be sure to not modify image passed to your version function,
-     *       because it will be reused in all other versions,
-     *       Before modification you should copy images as in examples below
-     * @note 'preview' & 'original' versions names are reserved for image preview in widget
-     *       and original image files, if it is required - you can override them
-     * @example
-     * [
-     *  'small' => function ($img) {
-     *      return $img
-     *          ->copy()
-     *          ->resize($img->getSize()->widen(200));
-     *  },
-     *  'medium' => function ($img) {
-     *      $dstSize = $img->getSize();
-     *      $maxWidth = 800;
-     * ]
-     */
-    public $versions;
+
     /**
      * name of query param for modification time hash
      * to avoid using outdated version from cache - set it to false
@@ -106,32 +71,10 @@ class GalleryBehavior extends Behavior
     public $tableName = '{{%gallery_image}}';
     protected $_galleryId;
 
-    /**
-     * @param ActiveRecord $owner
-     */
-    public function attach($owner)
-    {
-        parent::attach($owner);
-        if (!isset($this->versions['original'])) {
-            $this->versions['original'] = function ($image) {
-                return $image;
-            };
-        }
-        if (!isset($this->versions['preview'])) {
-            $this->versions['preview'] = function ($originalImage) {
-                /** @var ImageInterface $originalImage */
-                return $originalImage
-                    ->thumbnail(new Box($this->previewWidth, $this->previewHeight));
-            };
-        }
-    }
-
     public function events()
     {
         return [
             ActiveRecord::EVENT_BEFORE_DELETE => 'beforeDelete',
-            ActiveRecord::EVENT_AFTER_UPDATE => 'afterUpdate',
-            ActiveRecord::EVENT_AFTER_FIND => 'afterFind',
         ];
     }
 
@@ -145,22 +88,30 @@ class GalleryBehavior extends Behavior
         @rmdir($dirPath);
     }
 
-    public function afterFind()
-    {
-        $this->_galleryId = $this->getGalleryId();
-    }
-
-    public function afterUpdate()
-    {
-        $galleryId = $this->getGalleryId();
-        if ($this->_galleryId != $galleryId) {
-            $dirPath1 = $this->directory . '/' . $this->_galleryId;
-            $dirPath2 = $this->directory . '/' . $galleryId;
-            rename($dirPath1, $dirPath2);
-        }
-    }
-
     protected $_images = null;
+
+    /**
+     * @return GalleryImage
+     */
+    public function getImage()
+    {
+        if ($this->_images === null) {
+            $query = new Query();
+            $imageData = $query
+                ->select(['id', 'name', 'description', 'sort', 'src'])
+                ->from($this->tableName)
+                ->where(['type' => $this->type, 'ownerId' => $this->getGalleryId()])
+                ->orderBy(['sort' => SORT_ASC])
+                ->one();
+            $this->_images = [];
+            if ($imageData) {
+                $this->_images[] = new GalleryImage($this, $imageData);
+            } else {
+                $this->_images[] = false;
+            }
+        }
+        return $this->_images[0];
+    }
 
     /**
      * @return GalleryImage[]
@@ -168,13 +119,13 @@ class GalleryBehavior extends Behavior
     public function getImages()
     {
         if ($this->_images === null) {
-            $query = new \yii\db\Query();
+            $query = new Query();
 
             $imagesData = $query
-                ->select(['id', 'name', 'description', 'rank'])
+                ->select(['id', 'name', 'description', 'sort', 'src'])
                 ->from($this->tableName)
                 ->where(['type' => $this->type, 'ownerId' => $this->getGalleryId()])
-                ->orderBy(['rank' => 'asc'])
+                ->orderBy(['sort' => SORT_ASC])
                 ->all();
 
             $this->_images = [];
@@ -186,75 +137,27 @@ class GalleryBehavior extends Behavior
         return $this->_images;
     }
 
-    protected function getFileName($imageId, $version = 'original')
+    public function getUrl($imageName)
     {
-        return implode(
-            '/',
-            [
-                $this->getGalleryId(),
-                $imageId,
-                $version . '.' . $this->extension,
-            ]
-        );
-    }
-
-    public function getUrl($imageId, $version = 'original')
-    {
-        $path = $this->getFilePath($imageId, $version);
+        $path = $this->getFilePath($imageName);
 
         if (!file_exists($path)) {
             return null;
         }
 
-        if (!empty($this->timeHash)) {
-
-            $time = filemtime($path);
-            $suffix = '?' . $this->timeHash . '=' . crc32($time);
-        } else {
-            $suffix = '';
-        }
-
-        return $this->url . '/' . $this->getFileName($imageId, $version) . $suffix;
+        return $this->url . '/' . $this->galleryId . '/' . $imageName;
     }
 
-    public function getFilePath($imageId, $version = 'original')
+    public function getFilePath($fileName)
     {
-        return $this->directory . '/' . $this->getFileName($imageId, $version);
-    }
-
-    /**
-     * Replace existing image by specified file
-     *
-     * @param $imageId
-     * @param $path
-     */
-    public function replaceImage($imageId, $path)
-    {
-        $this->createFolders($this->getFilePath($imageId, 'original'));
-
-        $originalImage = Image::getImagine()->open($path);
-        //save image in original size
-
-        //create image preview for gallery manager
-        foreach ($this->versions as $version => $fn) {
-            /** @var ImageInterface $image */
-
-            $image = call_user_func($fn, $originalImage);
-            if (is_array($image)) {
-                list($image, $options) = $image;
-            } else {
-                $options = [];
-            }
-
-            $image
-                ->save($this->getFilePath($imageId, $version), $options);
-        }
+        return $this->directory . DIRECTORY_SEPARATOR . $this->galleryId . DIRECTORY_SEPARATOR . $fileName;
     }
 
     private function removeFile($fileName)
     {
-        if (file_exists($fileName)) {
-            @unlink($fileName);
+        $file = $this->getFilePath($fileName);
+        if (file_exists($file)) {
+            @unlink($file);
         }
     }
 
@@ -266,6 +169,9 @@ class GalleryBehavior extends Behavior
      */
     public function getGalleryId()
     {
+        if ($this->_galleryId) {
+            return $this->_galleryId;
+        }
         $pk = $this->owner->getPrimaryKey();
         if (is_array($pk)) {
             return implode($this->pkGlue, $pk);
@@ -274,38 +180,44 @@ class GalleryBehavior extends Behavior
         }
     }
 
-
-    private function createFolders($filePath)
+    public function createFolders()
     {
-        $parts = explode('/', $filePath);
-        // skip file name
-        $parts = array_slice($parts, 0, count($parts) - 1);
-        $targetPath = implode('/', $parts);
+        $targetPath = $this->directory . '/' . $this->galleryId;
         $path = realpath($targetPath);
         if (!$path) {
-            mkdir($targetPath, 0777, true);
+            mkdir($targetPath, 0744, true);
+            $path = $targetPath;
         }
+        return $path;
     }
 
-    /////////////////////////////// ========== Public Actions ============ ///////////////////////////
     public function deleteImage($imageId)
     {
-        foreach ($this->versions as $version => $fn) {
-            $filePath = $this->getFilePath($imageId, $version);
-            $this->removeFile($filePath);
-        }
-        $filePath = $this->getFilePath($imageId, 'original');
-        $parts = explode('/', $filePath);
-        $parts = array_slice($parts, 0, count($parts) - 1);
-        $dirPath = implode('/', $parts);
-        @rmdir($dirPath);
-
-        $db = \Yii::$app->db;
+        $imageQuery = (new Query())
+            ->select(['id', 'name', 'description', 'sort', 'src'])
+            ->from($this->tableName)
+            ->where(['id' => $imageId])
+            ->one();
+        $this->removeFile($imageQuery['src']);
+        $db = Yii::$app->db;
         $db->createCommand()
             ->delete(
                 $this->tableName,
                 ['id' => $imageId]
             )->execute();
+    }
+
+    public function rotateImage($imageId)
+    {
+        $imageQuery = (new Query())
+            ->select(['id', 'name', 'description', 'sort', 'src'])
+            ->from($this->tableName)
+            ->where(['id' => $imageId])
+            ->one();
+        Image::frame(
+            $this->getFilePath($imageQuery['src']),
+            0
+        )->rotate(90)->save($this->getFilePath($imageQuery['src']));
     }
 
     public function deleteImages($imageIds)
@@ -324,9 +236,9 @@ class GalleryBehavior extends Behavior
         }
     }
 
-    public function addImage($fileName)
+    public function addImage($imageFile)
     {
-        $db = \Yii::$app->db;
+        $db = Yii::$app->db;
         $db->createCommand()
             ->insert(
                 $this->tableName,
@@ -336,17 +248,28 @@ class GalleryBehavior extends Behavior
                 ]
             )->execute();
 
+        $this->createFolders();
+
+        do {
+            $fileName = uniqid() . '.' . $imageFile->extension;
+        } while (file_exists($this->getFilePath($fileName)));
+        $imageFile->saveAs($this->getFilePath($fileName));
+
         $id = $db->getLastInsertID('gallery_image_id_seq');
         $db->createCommand()
             ->update(
                 $this->tableName,
-                ['rank' => $id],
+                [
+                    'sort' => $id,
+                    'src' => $fileName
+                ],
                 ['id' => $id]
             )->execute();
 
-        $this->replaceImage($id, $fileName);
-
-        $galleryImage = new GalleryImage($this, ['id' => $id]);
+        $galleryImage = new GalleryImage($this, [
+            'id' => $id,
+            'src' => $fileName
+        ]);
 
         if ($this->_images !== null) {
             $this->_images[] = $galleryImage;
@@ -373,17 +296,15 @@ class GalleryBehavior extends Behavior
         foreach ($order as $k => $v) {
             $res[$k] = $orders[$i];
 
-            \Yii::$app->db->createCommand()
+            Yii::$app->db->createCommand()
                 ->update(
                     $this->tableName,
-                    ['rank' => $orders[$i]],
+                    ['sort' => $orders[$i]],
                     ['id' => $k]
                 )->execute();
 
             $i++;
         }
-
-        // todo: arrange images if presented
         return $order;
     }
 
@@ -396,6 +317,7 @@ class GalleryBehavior extends Behavior
     {
         $imageIds = array_keys($imagesData);
         $imagesToUpdate = [];
+
         if ($this->_images !== null) {
             $selected = array_combine($imageIds, $imageIds);
             foreach ($this->_images as $img) {
@@ -405,11 +327,11 @@ class GalleryBehavior extends Behavior
             }
         } else {
             $rawImages = (new Query())
-                ->select(['id', 'name', 'description', 'rank'])
+                ->select(['id', 'name', 'description', 'sort', 'src'])
                 ->from($this->tableName)
                 ->where(['type' => $this->type, 'ownerId' => $this->getGalleryId()])
                 ->andWhere(['in', 'id', $imageIds])
-                ->orderBy(['rank' => 'asc'])
+                ->orderBy(['sort' => SORT_ASC])
                 ->all();
             foreach ($rawImages as $image) {
                 $imagesToUpdate[] = new GalleryImage($this, $image);
@@ -424,7 +346,7 @@ class GalleryBehavior extends Behavior
             if (isset($imagesData[$image->id]['description'])) {
                 $image->description = $imagesData[$image->id]['description'];
             }
-            \Yii::$app->db->createCommand()
+            Yii::$app->db->createCommand()
                 ->update(
                     $this->tableName,
                     ['name' => $image->name, 'description' => $image->description],
@@ -435,48 +357,4 @@ class GalleryBehavior extends Behavior
         return $imagesToUpdate;
     }
 
-    /**
-     * Regenerate image versions
-     * Should be called in migration on every model after changes in versions configuration
-     *
-     * @param string|null $oldExtension
-     */
-    public function updateImages($oldExtension = null)
-    {
-        $ids = array_map(function ($image) {
-            /** @var GalleryImage $image */
-            return $image->id;
-        }, $this->getImages());
-
-        foreach ($ids as $id) {
-            if ($oldExtension !== null) {
-                $newExtension = $this->extension;
-                $this->extension = $oldExtension;
-                $originalImage = Image::getImagine()
-                    ->open($this->getFilePath($id, 'original'));
-                foreach ($this->versions as $version => $fn) {
-                    $this->removeFile($this->getFilePath($id, $version));
-                }
-                $this->extension = $newExtension;
-                $originalImage->save($this->getFilePath($id, 'original'));
-            } else {
-                $originalImage = Image::getImagine()
-                    ->open($this->getFilePath($id, 'original'));
-            }
-
-            foreach ($this->versions as $version => $fn) {
-                if ($version !== 'original') {
-                    $this->removeFile($this->getFilePath($id, $version));
-                    /** @var ImageInterface $image */
-                    $image = call_user_func($fn, $originalImage);
-                    if (is_array($image)) {
-                        list($image, $options) = $image;
-                    } else {
-                        $options = [];
-                    }
-                    $image->save($this->getFilePath($id, $version), $options);
-                }
-            }
-        }
-    }
 }

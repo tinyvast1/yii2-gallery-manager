@@ -14,6 +14,7 @@ return [
     'Edit' => 'Modifica',
     'Name' => 'Nome',
     'Remove' => 'Rimuovi',
+    'Rotate' => '',
     'Save changes' => 'Salva Modifiche',
     'Select all' => 'Seleziona tutto',
     'Drop Files Here…' => 'Rilascia i Files qui…',
