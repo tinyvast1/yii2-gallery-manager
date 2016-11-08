@@ -145,7 +145,10 @@
         }
 
 
-        function editPhotos(ids) {
+        function editPhotos(ids, edit) {
+            if (edit === undefined) {
+                edit = false;
+            }
             var l = ids.length;
             var form = $editorForm.empty();
             for (var i = 0; i < l; i++) {
@@ -156,7 +159,7 @@
                     description = $('.caption p', photo).text();
                 form.append(createEditorElement(id, src, name, description));
             }
-            if (l > 0) {
+            if (l > 0 && edit) {
                 $editorModal.modal('show');
             }
         }
@@ -194,7 +197,7 @@
             e.preventDefault();
             var photo = $(this).closest('.photo');
             var id = photo.data('id');
-            editPhotos([id]);
+            editPhotos([id], true);
             return false;
         }
 
@@ -395,7 +398,7 @@
             $('.photo.selected', $sorter).each(function () {
                 ids.push($(this).data('id'));
             });
-            editPhotos(ids);
+            editPhotos(ids, true);
             return false;
         });
 
