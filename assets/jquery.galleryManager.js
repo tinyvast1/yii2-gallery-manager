@@ -23,7 +23,9 @@
         updateUrl: '',
         arrangeUrl: '',
 
-        photos: []
+        photos: [],
+
+        async: false
     };
 
     function galleryManager(el, options) {
@@ -261,7 +263,7 @@
                         fd.append(opts.csrfTokenName, opts.csrfToken);
                     }
                     var xhr = new XMLHttpRequest();
-                    xhr.open('POST', opts.uploadUrl, true);
+                    xhr.open('POST', opts.uploadUrl, opts.async);
                     xhr.onload = function () {
                         uploadedCount++;
                         if (this.status == 200) {

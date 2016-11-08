@@ -29,6 +29,9 @@ class GalleryManager extends Widget
     /** @var string Route to gallery controller */
     public $apiRoute = false;
 
+    /** @var bool async upload XMLHttpRequest */
+    public $async = false;
+
     public $options = array();
 
 
@@ -93,6 +96,7 @@ class GalleryManager extends Widget
                 'rotate' => Yii::t('galleryManager/main', 'Rotate'),
             ),
             'photos' => $images,
+            'async' => $this->async,
         );
 
         $opts = Json::encode($opts);

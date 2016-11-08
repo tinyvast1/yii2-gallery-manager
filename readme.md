@@ -22,7 +22,7 @@ The preferred way to install this extension is through [composer](https://getcom
 
 Either run
 
-`php composer.phar require --prefer-dist zxbodya/yii2-gallery-manager "*@dev"`
+`php composer.phar require --prefer-dist aquy/yii2-gallery-manager "*"`
 
 or add
 
@@ -87,7 +87,8 @@ if ($model->isNewRecord) {
         [
             'model' => $model,
             'behaviorName' => 'galleryBehavior',
-            'apiRoute' => 'product/galleryApi'
+            'apiRoute' => 'product/galleryApi',
+            'async' => false
         ]
     );
 }
