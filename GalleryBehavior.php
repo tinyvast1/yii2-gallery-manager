@@ -185,7 +185,7 @@ class GalleryBehavior extends Behavior
         $targetPath = $this->directory . '/' . $this->galleryId;
         $path = realpath($targetPath);
         if (!$path) {
-            mkdir($targetPath, 0744, true);
+            mkdir($targetPath, 0755, true);
             $path = $targetPath;
         }
         return $path;
