@@ -266,6 +266,12 @@
                         fd.append(opts.csrfTokenName, opts.csrfToken);
                     }
                     var xhr = new XMLHttpRequest();
+                    xhr.upload.onprogress = function(e){
+                        if (e.lengthComputable) {
+                            var percentComplete = Math.ceil(e.loaded / e.total * 100);
+                            $uploadProgress.css('width', '' + percentComplete + '%');
+                        }
+                    };
                     xhr.open('POST', opts.uploadUrl, opts.async);
                     xhr.onload = function () {
                         uploadedCount++;
@@ -357,7 +363,17 @@
                     files: $(this),
                     iframe: true,
                     processData: false,
-                    dataType: "json"
+                    dataType: "json",
+                    xhr: function(){
+                        var xhr = $.ajaxSettings.xhr();
+                        xhr.upload.addEventListener('progress', function(e){
+                            if (e.lengthComputable) {
+                                var percentComplete = Math.ceil(e.loaded / e.total * 100);
+                                $uploadProgress.css('width', '' + percentComplete + '%');
+                            }
+                        }, false);
+                        return xhr;
+                    }
                 }).done(function (resp) {
                         addPhoto(resp['id'], resp['preview'], resp['name'], resp['description'], resp['sort']);
                         ids.push(resp['id']);
