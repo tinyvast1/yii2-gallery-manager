@@ -50,7 +50,7 @@ class GalleryBehavior extends Behavior
      * to avoid using outdated version from cache - set it to false
      * @var string
      */
-    public $timeHash = '_';
+    public $ownerTimeHash;
 
     /**
      * Used by GalleryManager
@@ -380,15 +380,19 @@ class GalleryBehavior extends Behavior
             ])
             ->orderBy(['sort' => SORT_ASC])
             ->one();
+        $columns = [];
         if ($firstImageGalleryQuery) {
-            $firstImageGallerySrc = $firstImageGalleryQuery['src'];
+            $columns[$this->ownerFirstSrc] = $firstImageGalleryQuery['src'];
         } else {
-            $firstImageGallerySrc = '';
+            $columns[$this->ownerFirstSrc] = '';
+        }
+        if ($this->ownerTimeHash) {
+            $columns[$this->ownerTimeHash] = time();
         }
         Yii::$app->db->createCommand()
             ->update(
                 $this->owner->tableName(),
-                [$this->ownerFirstSrc => $firstImageGallerySrc],
+                $columns,
                 ['id' => $this->owner->id]
             )->execute();
         return true;
