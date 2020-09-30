@@ -66,6 +66,12 @@ class GalleryBehavior extends Behavior
     public $hasDescription = true;
 
     /**
+     * name of model for modification first src file in model
+     * @var string
+     */
+    public $ownerFirstSrc;
+
+    /**
      * @var string Table name for saving gallery images meta information
      */
     public $tableName = '{{%gallery_image}}';
@@ -205,6 +211,7 @@ class GalleryBehavior extends Behavior
                 $this->tableName,
                 ['id' => $imageId]
             )->execute();
+        $this->updateFirstSrc();
     }
 
     public function rotateImage($imageId)
@@ -265,6 +272,7 @@ class GalleryBehavior extends Behavior
                 ],
                 ['id' => $id]
             )->execute();
+        $this->updateFirstSrc();
 
         $galleryImage = new GalleryImage($this, [
             'id' => $id,
@@ -305,6 +313,7 @@ class GalleryBehavior extends Behavior
 
             $i++;
         }
+        $this->updateFirstSrc();
         return $order;
     }
 
@@ -355,6 +364,34 @@ class GalleryBehavior extends Behavior
         }
 
         return $imagesToUpdate;
+    }
+
+    private function updateFirstSrc()
+    {
+        if (!$this->ownerFirstSrc) {
+            return false;
+        }
+        $firstImageGalleryQuery = (new Query())
+            ->select(['src'])
+            ->from($this->tableName)
+            ->where([
+                'type' => $this->type,
+                'ownerId' => $this->getGalleryId()
+            ])
+            ->orderBy(['sort' => SORT_ASC])
+            ->one();
+        if ($firstImageGalleryQuery) {
+            $firstImageGallerySrc = $firstImageGalleryQuery['src'];
+        } else {
+            $firstImageGallerySrc = '';
+        }
+        Yii::$app->db->createCommand()
+            ->update(
+                $this->owner->tableName(),
+                [$this->ownerFirstSrc => $firstImageGallerySrc],
+                ['id' => $this->owner->id]
+            )->execute();
+        return true;
     }
 
 }
