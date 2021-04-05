@@ -280,7 +280,10 @@
                             addPhoto(resp['id'], resp['preview'], resp['name'], resp['description'], resp['sort']);
                             ids.push(resp['id']);
                         } else {
-                            // exception !!!
+                            try {
+                                alert(JSON.parse(this.response).error)
+                            } catch (e) {
+                            }
                         }
                         $uploadProgress.css('width', '' + (5 + 95 * uploadedCount / filesCount) + '%');
 

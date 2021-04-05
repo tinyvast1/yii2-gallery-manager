@@ -117,6 +117,30 @@ class GalleryManagerAction extends Action
 
         $imageFile = UploadedFile::getInstanceByName('image');
 
+        if (isset($this->behavior->maxSize) && $imageFile->size > $this->behavior->maxSize){
+            Yii::$app->response->statusCode = 500;
+            Yii::$app->response->statusText = 'Internal Server Error';
+            Yii::$app->response->headers->set('Content-Type', 'text/html');
+            return Json::encode(
+                array(
+                    'error' => 'Image is too large. Max size of image: ' . $this->behavior->maxSize . ' bytes',
+                )
+            );
+        }
+
+        if (isset($this->behavior->allowedMimeType) && is_array($this->behavior->allowedMimeType) && count($this->behavior->allowedMimeType) > 0){
+            if (!in_array($imageFile->type, $this->behavior->allowedMimeType)) {
+                Yii::$app->response->statusCode = 500;
+                Yii::$app->response->statusText = 'Internal Server Error';
+                Yii::$app->response->headers->set('Content-Type', 'text/html');
+                return Json::encode(
+                    array(
+                        'error' => 'Not allowed MIME-type. Allowed MIME-types: ' . implode(',', $this->behavior->allowedMimeType),
+                    )
+                );
+            }
+        }
+
         $image = $this->behavior->addImage($imageFile);
 
         // not "application/json", because  IE8 trying to save response as a file

@@ -75,6 +75,19 @@ class GalleryBehavior extends Behavior
      * @var string Table name for saving gallery images meta information
      */
     public $tableName = '{{%gallery_image}}';
+
+    /**
+     * allowed MIME-types of uploaded images
+     * @var array
+     */
+    public $allowedMimeType;
+
+    /**
+     * max size of uploaded images
+     * @var integer
+     */
+    public $maxSize;
+
     protected $_galleryId;
 
     public function events()
