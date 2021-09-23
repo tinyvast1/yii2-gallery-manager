@@ -135,7 +135,54 @@ class GalleryManagerAction extends Action
                 Yii::$app->response->headers->set('Content-Type', 'text/html');
                 return Json::encode(
                     array(
-                        'error' => 'Not allowed MIME-type. Allowed MIME-types: ' . implode(',', $this->behavior->allowedMimeType),
+                        'error' => 'Not allowed MIME-type. Allowed MIME-types: ' . implode(', ', $this->behavior->allowedMimeType),
+                    )
+                );
+            }
+        }
+
+        if (isset($this->behavior->maxWidth) || isset($this->behavior->maxHeight)) {
+            $info = getimagesize($imageFile->tempName);
+            if (!isset($info[0]) || ($info[0] > $this->behavior->maxWidth)) {
+                Yii::$app->response->statusCode = 500;
+                Yii::$app->response->statusText = 'Internal Server Error';
+                Yii::$app->response->headers->set('Content-Type', 'text/html');
+                return Json::encode(
+                    array(
+                        'error' => 'Maximum allowed width of an uploaded image is ' . $this->behavior->maxWidth,
+                    )
+                );
+            }
+        }
+
+        if (isset($this->behavior->maxWidth) || isset($this->behavior->maxHeight) || isset($this->behavior->minHeight) || isset($this->behavior->minWidth)) {
+            $info = getimagesize($imageFile->tempName);
+            $error = [];
+            if (isset($info[0]) && $info[1]) {
+                $width = $info[0];
+                $height = $info[1];
+                if (isset($this->behavior->maxWidth) && $width > $this->behavior->maxWidth) {
+                    $error[] = 'Maximum allowed width of an uploaded image is ' . $this->behavior->maxWidth;
+                }
+                if (isset($this->behavior->maxHeight) && $height > $this->behavior->maxHeight) {
+                    $error[] = 'Maximum allowed height of an uploaded image is ' . $this->behavior->maxHeight;
+                }
+                if (isset($this->behavior->minWidth) && $width < $this->behavior->minWidth) {
+                    $error[] = 'Minimum allowed height of an uploaded image is ' . $this->behavior->minWidth;
+                }
+                if (isset($this->behavior->minHeight) && $width < $this->behavior->minHeight) {
+                    $error[] = 'Minimum allowed height of an uploaded image is ' . $this->behavior->minHeight;
+                }
+            } else {
+                $error[] = 'Error';
+            }
+            if (count($error) > 0) {
+                Yii::$app->response->statusCode = 500;
+                Yii::$app->response->statusText = 'Internal Server Error';
+                Yii::$app->response->headers->set('Content-Type', 'text/html');
+                return Json::encode(
+                    array(
+                        'error' => implode('||', $error)
                     )
                 );
             }
