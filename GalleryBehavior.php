@@ -88,6 +88,30 @@ class GalleryBehavior extends Behavior
      */
     public $maxSize;
 
+    /**
+     * max width in pixels
+     * @var integer
+     */
+    public $maxWidth;
+
+    /**
+     * max height in pixels
+     * @var integer
+     */
+    public $maxHeight;
+
+    /**
+     * min width in pixels
+     * @var integer
+     */
+    public $minWidth;
+
+    /**
+     * min height in pixels
+     * @var integer
+     */
+    public $minHeight;
+
     protected $_galleryId;
 
     public function events()
