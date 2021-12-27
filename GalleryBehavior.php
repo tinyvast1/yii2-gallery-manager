@@ -83,6 +83,12 @@ class GalleryBehavior extends Behavior
     public $allowedMimeType;
 
     /**
+     * allowed extensions of uploaded images
+     * @var array
+     */
+    public $allowedExt;
+
+    /**
      * max size of uploaded images
      * @var integer
      */

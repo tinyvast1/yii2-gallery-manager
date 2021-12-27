@@ -117,6 +117,22 @@ class GalleryManagerAction extends Action
 
         $imageFile = UploadedFile::getInstanceByName('image');
 
+        if (isset($this->behavior->allowedExt) && is_array($this->behavior->allowedExt) && count($this->behavior->allowedExt) > 0){
+            array_walk($this->behavior->allowedExt, function (&$item, $key) {
+                $item = strtolower($item);
+            });
+            if (!in_array(strtolower($imageFile->extension), $this->behavior->allowedExt)) {
+                Yii::$app->response->statusCode = 500;
+                Yii::$app->response->statusText = 'Internal Server Error';
+                Yii::$app->response->headers->set('Content-Type', 'text/html');
+                return Json::encode(
+                    array(
+                        'error' => 'Not allowed extension. Allowed extensions: ' . implode(', ', $this->behavior->allowedExt),
+                    )
+                );
+            }
+        }
+
         if (isset($this->behavior->maxSize) && $imageFile->size > $this->behavior->maxSize){
             Yii::$app->response->statusCode = 500;
             Yii::$app->response->statusText = 'Internal Server Error';
