@@ -107,12 +107,17 @@
             '</div><input type="checkbox" class="photo-select"/></div>';
 
 
-        function addPhoto(id, src, name, description, sort) {
+        function addPhoto(id, src, name, description, sort, howToAdd = 'append') {
+            if (howToAdd === 'prepend') {
+                sort = $('.photo', $sorter).first().data('sort') - 1
+            }
+
             var photo = $(photoTemplate);
             photos[id] = photo;
             photo.data('id', id);
             photo.data('sort', sort);
 
+            
             $('img', photo).attr('src', src);
             if (opts.hasName) {
                 $('.caption h5', photo).text(name);
@@ -121,7 +126,8 @@
                 $('.caption p', photo).text(description);
             }
 
-            $images.append(photo);
+            $images[howToAdd](photo) // вызов функции с названием = howToAdd
+
             return photo;
         }
 
@@ -240,8 +246,8 @@
                 data: data.join('&') + csrfParams,
                 dataType: "json"
             }).done(function (data) {
-                    for (var id in data[id]) {
-                        photos[id].data('sort', data[id]);
+                for (var id in data[id]) {
+                    photos[id].data('sort', data[id]);
                     }
                     // order saved!
                     // we can inform user that order saved
@@ -277,7 +283,7 @@
                         uploadedCount++;
                         if (this.status == 200) {
                             var resp = JSON.parse(this.response);
-                            addPhoto(resp['id'], resp['preview'], resp['name'], resp['description'], resp['sort']);
+                            addPhoto(resp['id'], resp['preview'], resp['name'], resp['description'], resp['sort'], 'prepend');
                             ids.push(resp['id']);
                         } else {
                             try {
@@ -348,6 +354,23 @@
             $('.afile', $gallery).attr('multiple', 'true').on('change', function (e) {
                 e.preventDefault();
                 multiUpload(this.files);
+
+                var data = [];
+                $('.photo', $sorter).each(function () {
+                    var t = $(this);
+                    data.push('order[' + t.data('id') + ']=' + (+t.data('sort') + 1));
+                });
+                $.ajax({
+                    type: 'POST',
+                    url: opts.arrangeUrl,
+                    data: data.join('&') + csrfParams,
+                    dataType: "json"
+                }).done(function (data) {
+                    const arrData = Object.entries(data);
+                    for (let [id, sort] of arrData) {
+                        photos[id].data('sort', sort);
+                    }
+                });
             });
         } else {
             $('.afile', $gallery).on('change', function (e) {
@@ -378,7 +401,7 @@
                         return xhr;
                     }
                 }).done(function (resp) {
-                        addPhoto(resp['id'], resp['preview'], resp['name'], resp['description'], resp['sort']);
+                        addPhoto(resp['id'], resp['preview'], resp['name'], resp['description'], resp['sort'], 'prepend');
                         ids.push(resp['id']);
                         $uploadProgress.css('width', '100%');
                         $progressOverlay.hide();
